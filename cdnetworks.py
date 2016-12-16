@@ -2,6 +2,7 @@ import time
 import sys
 import csv
 import os
+import argparse
 from configparser import ConfigParser
 
 import wdstart
@@ -17,7 +18,7 @@ class CDNetworksBot:
         config = ConfigParser()
         config.read_file(open('config.ini', mode='r', encoding='utf8'))
         if not config.has_section('CREDENTIALS'):
-            print('Config file not available or correctly configured! Exiting.')
+            print('[*] Config file not available or correctly configured! Exiting')
             sys.exit()
 
         self.USERNAME = config['CREDENTIALS']['Username']
@@ -71,34 +72,27 @@ def delete_zones(csvfile, cdnetworksbot):
         cdnetworksbot.delete_zone(domain_name=row[0])
 
 def main():
-    input_file = input('Enter the filename of input CSV (leave blank for "input.csv"): ')
-    if not input_file:
-        input_file = 'input.csv'
-    if not os.path.exists(input_file):
-        print('CSV file not found! Exiting.')
-        sys.exit()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('action', help='If the script should add or delete DNS zone entries', type=str, choices=['add', 'delete'])
+    parser.add_argument('filename', help='File name of the input CSV file', type=str, default='input.csv')
+    parser.parse_args()
 
-    try:
-        argument = sys.argv[1]
-    except IndexError:
-        print('No command-line argument provided! Exiting')
+    input_file = parser.filename
+    if not os.path.exists(input_file):
+        print('[*] CSV file not found! Exiting')
         sys.exit()
 
     with open(input_file, mode='r') as f:
         csvfile = csv.reader(f)
 
-        if argument == 'add':
+        if parser.action == 'add':
             cdnetworksbot = CDNetworksBot()
             cdnetworksbot.login()
             add_zones(csvfile, cdnetworksbot)
-        elif argument == 'delete':
+        elif parser.action == 'delete':
             cdnetworksbot = CDNetworksBot()
             cdnetworksbot.login()
             delete_zones(csvfile, cdnetworksbot)
-        else:
-            print('Invalid command-line arguments! Exiting')
-            sys.exit()
-
 
 if __name__=='__main__':
     main()
